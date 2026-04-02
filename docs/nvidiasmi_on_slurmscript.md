@@ -14,6 +14,24 @@ temperature.gpu,power.draw,clocks.current.sm \
   -f gpu-stats-${SLURM_JOB_ID}.csv &
 ```
 
+??? table "Index"
+
+    The `-l 5` flag polls every 5 seconds and writes each sample as a CSV row to `gpu-stats-${SLURM_JOB_ID}.out`. Because the process is launched with `&` it runs in the background alongside your workload and is automatically terminated when the job ends.
+
+    The fields collected are:
+
+    | Field                                         | Description                                      |
+    | --------------------------------------------- | ------------------------------------------------ |
+    | `timestamp`                                   | Wall-clock time of the sample                    |
+    | `uuid`                                        | GPU device UUID                                  |
+    | `clocks_throttle_reasons.sw_thermal_slowdown` | Whether the GPU is throttling due to temperature |
+    | `utilization.gpu`                             | GPU utilisation (%) — see note below             |
+    | `utilization.memory`                          | Memory bus utilisation (%) — see note below      |
+    | `memory.used` / `memory.total`                | Device memory in MiB                             |
+    | `temperature.gpu`                             | GPU die temperature in °C                        |
+    | `power.draw`                                  | Instantaneous power draw in W                    |
+    | `clocks.current.sm`                           | SM clock frequency in MHz                        |
+
 !!! terminal-2 "Sample Slurm script"
 
     ```rust
