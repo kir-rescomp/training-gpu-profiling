@@ -4,9 +4,11 @@ When a GPU job is running on the cluster you may want to check how well the GPU 
 
 ![srun-overlap](./images/srun_overlap_schematic.svg){width=800, align=center}
 
+<div class="dracula" markdown="1">
+
 ## Getting onto the node
 
-```bash
+```py
 srun --overlap --jobid <JOBID> --pty bash
 ```
 
@@ -18,7 +20,7 @@ srun --overlap --jobid <JOBID> --pty bash
 
 From inside the interactive shell, run:
 
-```bash
+```py
 nvidia-smi
 ```
 
@@ -26,7 +28,8 @@ nvidia-smi
 This gives a snapshot of every GPU on the node: the device model, current utilisation percentage (the key metric — close to 100% is ideal for a compute-bound workload), memory used versus total capacity, temperature, and the processes attached to each device. Your job's process should appear in the process table at the bottom with its PID and memory footprint.
 
 For a live view that refreshes every second:
-```bash
+
+```py
 watch -n 5 nvidia-smi
 ```
 Low utilisation (say, under 50%) while the job is running is a common indicator of a CPU bottleneck, slow data loading, or excessive host–device memory transfers — all worth investigating with a more detailed profiler such as Nsight Systems.
@@ -34,3 +37,5 @@ Low utilisation (say, under 50%) while the job is running is a common indicator 
 ### Exiting
 
 Type `exit` or press `Ctrl-D` to close the interactive session. This terminates only the `srun` step; your batch job continues running on the node completely unaffected.
+
+</div>
