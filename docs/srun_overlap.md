@@ -12,7 +12,6 @@ srun --overlap --jobid <JOBID> --pty bash
 ```
 
 !!! circle-info ""
-
     * The `--overlap` flag is the key ingredient. By default Slur refuses to start a new step inside an allocation that is already fully occupied. Passing `--overlap` tells Slurm to inject your interactive step into the running job's allocation, sharing the same node without displacing the original job. Once the shell opens you are sitting directly on the GPU node alongside your workload.
     * Your `<JOBID>` is available from `squeue --me`.
 
