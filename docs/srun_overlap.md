@@ -16,6 +16,16 @@ srun --overlap --jobid <JOBID> --pty bash
     * The `--overlap` flag is the key ingredient. By default Slur refuses to start a new step inside an allocation that is already fully occupied. Passing `--overlap` tells Slurm to inject your interactive step into the running job's allocation, sharing the same node without displacing the original job. Once the shell opens you are sitting directly on the GPU node alongside your workload.
     * Your `<JOBID>` is available from `squeue --me`.
 
+    **Important**
+
+    * `--overlap` directive only works when the job is at `RUNNING` state. Executing the above command while the job is still `PENDING` will trigger the following error 
+
+    ```py
+    srun: error: Unable to confirm allocation for job JOIBD: Job is pending execution
+    srun: Check SLURM_JOB_ID environment variable. Expired or invalid job JOBID
+    ```
+
+
 ## Checking GPU utilisation
 
 From inside the interactive shell, run:
@@ -37,5 +47,7 @@ Low utilisation (say, under 50%) while the job is running is a common indicator 
 ### Exiting
 
 Type `exit` or press `Ctrl-D` to close the interactive session. This terminates only the `srun` step; your batch job continues running on the node completely unaffected.
+
+
 
 </div>
