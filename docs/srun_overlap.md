@@ -2,8 +2,7 @@
 
 When a GPU job is running on the cluster you may want to check how well the GPU is actually being utilised — without interrupting or resubmitting the job. The `srun --overlap` technique lets you drop an interactive shell onto the exact node where your job is executing, giving you full access to nvidia-smi while the workload continues undisturbed.
 
-<p align="center">
-
+![srun-overlap](./images/srun_overlap_schematic.svg){width=800, align=center}
 
 ## Getting onto the node
 
