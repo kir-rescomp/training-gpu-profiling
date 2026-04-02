@@ -48,6 +48,14 @@ Low utilisation (say, under 50%) while the job is running is a common indicator 
 
 Type `exit` or press `Ctrl-D` to close the interactive session. This terminates only the `srun` step; your batch job continues running on the node completely unaffected.
 
+## Summary 
+
+<video width="100%" controls>
+  <source src="https://raw.githubusercontent.com/kir-rescomp/training-gpu-profiling/main/docs/images/srun_overlap.webm" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+
 
 
 </div>
