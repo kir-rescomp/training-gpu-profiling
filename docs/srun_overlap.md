@@ -44,6 +44,71 @@ watch -n 5 nvidia-smi
 ```
 Low utilisation (say, under 50%) while the job is running is a common indicator of a CPU bottleneck, slow data loading, or excessive host–device memory transfers — all worth investigating with a more detailed profiler such as Nsight Systems.
 
+### Sample output and how to identify your GPU processes
+
+??? circle-info "Sample `nvidia-smi` output"
+
+    ```python
+    ➜  nvidia-smi 
+    Thu Apr  2 14:28:29 2026       
+    +-----------------------------------------------------------------------------------------+
+    | NVIDIA-SMI 580.126.09             Driver Version: 580.126.09     CUDA Version: 13.0     |
+    +-----------------------------------------+------------------------+----------------------+
+    | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+    | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+    |                                         |                        |               MIG M. |
+    |=========================================+========================+======================|
+    |   0  Quadro RTX 6000                On  |   00000000:3B:00.0 Off |                  Off |
+    | 46%   70C    P2            239W /  260W |   19124MiB /  24576MiB |    100%      Default |
+    |                                         |                        |                  N/A |
+    +-----------------------------------------+------------------------+----------------------+
+    |   1  Quadro RTX 6000                On  |   00000000:5E:00.0 Off |                  Off |
+    | 33%   29C    P8             29W /  260W |       1MiB /  24576MiB |      0%      Default |
+    |                                         |                        |                  N/A |
+    +-----------------------------------------+------------------------+----------------------+
+    |   2  Quadro RTX 6000                On  |   00000000:AF:00.0 Off |                  Off |
+    | 33%   31C    P8             29W /  260W |       1MiB /  24576MiB |      0%      Default |
+    |                                         |                        |                  N/A |
+    +-----------------------------------------+------------------------+----------------------+
+    |   3  Quadro RTX 6000                On  |   00000000:D8:00.0 Off |                  Off |
+    | 33%   32C    P8             23W /  260W |       1MiB /  24576MiB |      0%      Default |
+    |                                         |                        |                  N/A |
+    +-----------------------------------------+------------------------+----------------------+
+
+    +-----------------------------------------------------------------------------------------+
+    | Processes:                                                                              |
+    |  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+    |        ID   ID                                                               Usage      |
+    |=========================================================================================|
+    |    0   N/A  N/A          946316      C   ./gpu_burn                            19120MiB |
+    +-----------------------------------------------------------------------------------------+
+    ```
+
+Running `nvidia-smi` on a shared node shows all GPU processes from all users, with only the binary name in the Process name column — there is no ownership information. On a node with multiple users running jobs with the same command ( let's say python3,etc), it is impossible to tell which processes are yours from the standard output alone.
+
+The `--query-compute-apps` flag exposes PIDs in a parseable form, which can be cross-referenced against the OS process table. The following one-liner filters GPU processes to only those owned by $USER and resolves the GPU UUID to a human-readable index:
+
+```py
+nvidia-smi --query-compute-apps=gpu_uuid,pid,process_name,used_gpu_memory \
+  --format=csv,noheader,nounits \
+| awk -F', ' -v user=$USER '{
+    cmd = "ps -o user= -p " $2 " 2>/dev/null"
+    cmd | getline owner; close(cmd)
+    if (owner == user) {
+      cmd2 = "nvidia-smi --query-gpu=index --format=csv,noheader --id=" $1
+      cmd2 | getline idx; close(cmd2)
+      print "GPU " idx "\tPID " $2 "\t" $3 "\t" $4 " MiB"
+    }
+  }'
+```
+
+```python
+GPU 0	PID 946316	./gpu_burn	19120 MiB
+```
+!!! quote ""
+
+    The UUID returned by --query-compute-apps (e.g. GPU-91bec788-...) does not directly correspond to the index shown in nvidia-smi's main table. The inner nvidia-smi --query-gpu=index --id=<UUID> call resolves this — the --id flag accepts a UUID directly, so the correct index is looked up without any fragile string parsing of the main output.
+
 ### Exiting
 
 Type `exit` or press `Ctrl-D` to close the interactive session. This terminates only the `srun` step; your batch job continues running on the node completely unaffected.
