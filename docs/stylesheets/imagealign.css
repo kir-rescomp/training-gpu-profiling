@@ -3,3 +3,7 @@
   margin-left: auto;
   margin-right: auto;
 }
+
+.md-typeset h1.centered {
+  text-align: center;
+}
