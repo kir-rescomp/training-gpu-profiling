@@ -11,8 +11,8 @@
 
 !!! table "Table of contents"
 
-    1. [Inspecting a live GPU job with `srun --overlap`](./1.srun_overlap.md)
-    2. [Instrumenting a Slurm batch script for GPU monitoring](./2.nvidiasmi_on_slurmscript.md)
-    3. [Advanced: profiling GPU code with Nsight Systems](./3.nsight-systems.md)
+    1. [Inspecting a live GPU job with `srun --overlap`](./2.srun_overlap.md)
+    2. [Instrumenting a Slurm batch script for GPU monitoring](./3.nvidiasmi_on_slurmscript.md)
+    3. [Advanced: profiling GPU code with Nsight Systems](./4.nsight-systems.md)
 
 - - -
