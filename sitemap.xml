@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://kir-rescomp.github.io/training-gpu-profiling/</loc>
+         <lastmod>2026-05-31</lastmod>
+    </url>
+    <url>
+         <loc>https://kir-rescomp.github.io/training-gpu-profiling/1.choosing_the_correctgpu/</loc>
+         <lastmod>2026-05-31</lastmod>
+    </url>
+    <url>
+         <loc>https://kir-rescomp.github.io/training-gpu-profiling/2.srun_overlap/</loc>
+         <lastmod>2026-05-31</lastmod>
+    </url>
+    <url>
+         <loc>https://kir-rescomp.github.io/training-gpu-profiling/3.nvidiasmi_on_slurmscript/</loc>
+         <lastmod>2026-05-31</lastmod>
+    </url>
+    <url>
+         <loc>https://kir-rescomp.github.io/training-gpu-profiling/4.nsight-systems/</loc>
+         <lastmod>2026-05-31</lastmod>
+    </url>
+</urlset>

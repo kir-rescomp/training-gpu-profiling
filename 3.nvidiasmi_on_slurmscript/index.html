@@ -1,0 +1,795 @@
+<!DOCTYPE html><html lang="en" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="The Kennedy Institute of Rheumatology, NDORMS, University of Oxford">
+      
+      
+        <link rel="canonical" href="https://kir-rescomp.github.io/training-gpu-profiling/3.nvidiasmi_on_slurmscript/">
+      
+      
+        <link rel="prev" href="../2.srun_overlap/">
+      
+      
+        <link rel="next" href="../4.nsight-systems/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/kir_standalone_logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Monitoring GPU usage in a Slurm batch job - GPU Profiling</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mukta:300,300i,400,400i,700,700i%7CFira+Code:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Mukta";--md-code-font:"Fira Code"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/catalogue-return-button.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code_block.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code_block_colour_dracula.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code_block_colour_monokai.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code_block_colour_github_dark.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code_block_colour_nord.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code_block_colour_onedark.css">
+    
+      <link rel="stylesheet" href="../stylesheets/side_bar_menu.css">
+    
+      <link rel="stylesheet" href="../stylesheets/imagealign.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#visualising-the-gpu-stats-csv" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="GPU Profiling" class="md-header__button md-logo" aria-label="GPU Profiling" data-md-component="logo">
+      
+  <img src="../images/KIR_Research_Computing_Hub_layered_logo_favicon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GPU Profiling
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Monitoring GPU usage in a Slurm batch job
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="indigo" aria-label="Switch to system preference" type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kir-rescomp/training-gpu-profiling" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    kir-rescomp/training-gpu-profiling
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="GPU Profiling" class="md-nav__button md-logo" aria-label="GPU Profiling" data-md-component="logo">
+      
+  <img src="../images/KIR_Research_Computing_Hub_layered_logo_favicon.svg" alt="logo">
+
+    </a>
+    GPU Profiling
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kir-rescomp/training-gpu-profiling" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    kir-rescomp/training-gpu-profiling
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../1.choosing_the_correctgpu/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing a GPU for your workload
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../2.srun_overlap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inspecting a live GPU job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring GPU usage in a Slurm batch job
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring GPU usage in a Slurm batch job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#visualising-the-gpu-stats-csv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visualising the GPU stats CSV
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Visualising the GPU stats CSV">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-utilisation-actually-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What "utilisation" actually means
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4.nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced - profiling GPU code with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#visualising-the-gpu-stats-csv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visualising the GPU stats CSV
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Visualising the GPU stats CSV">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-utilisation-actually-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What "utilisation" actually means
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 class="centered">Monitoring GPU usage in a Slurm batch job</h1>
+
+<p><a class="glightbox" data-type="image" data-width="auto" data-height="auto" href="../images/logo_nvidiasmi_slurmscript.png" data-desc-position="bottom"><img alt="choose-gpu" class="centered" src="../images/logo_nvidiasmi_slurmscript.png" width="500"></a></p>
+<p>Rather than sampling GPU metrics interactively, you can instrument your Slurm submission script to collect statistics automatically for the full duration of the job. Add the following near the top of your script, after your <code>#SBATCH</code> directives:</p>
+<div class="dracula">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Start collecting GPU stats in the background</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">nvidia</span><span class="o">-</span><span class="n">smi</span> \
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  <span class="o">--</span><span class="n">query</span><span class="o">-</span><span class="n">gpu</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span><span class="n">uuid</span><span class="p">,</span><span class="n">clocks_throttle_reasons</span><span class="o">.</span><span class="n">sw_thermal_slowdown</span><span class="p">,</span>\
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">utilization</span><span class="o">.</span><span class="n">gpu</span><span class="p">,</span><span class="n">utilization</span><span class="o">.</span><span class="n">memory</span><span class="p">,</span><span class="n">memory</span><span class="o">.</span><span class="n">used</span><span class="p">,</span><span class="n">memory</span><span class="o">.</span><span class="n">total</span><span class="p">,</span>\
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">temperature</span><span class="o">.</span><span class="n">gpu</span><span class="p">,</span><span class="n">power</span><span class="o">.</span><span class="n">draw</span><span class="p">,</span><span class="n">clocks</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">sm</span> \
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  <span class="o">--</span><span class="nb">format</span><span class="o">=</span><span class="n">csv</span><span class="p">,</span><span class="n">nounits</span> \
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  <span class="o">-</span><span class="n">l</span> <span class="mi">5</span> \
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  <span class="o">-</span><span class="n">f</span> <span class="n">gpu</span><span class="o">-</span><span class="n">stats</span><span class="o">-</span><span class="err">$</span><span class="p">{</span><span class="n">SLURM_JOB_ID</span><span class="p">}</span><span class="o">.</span><span class="n">csv</span> <span class="o">&amp;</span>
+</code></pre></div>
+<details class="table">
+<summary>Index</summary>
+<p>The <code>-l 5</code> flag polls every 5 seconds and writes each sample as a CSV row to <code>gpu-stats-${SLURM_JOB_ID}.out</code>. Because the process is launched with <code>&amp;</code> it runs in the background alongside your workload and is automatically terminated when the job ends.</p>
+<p>The fields collected are:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>timestamp</code></td>
+<td>Wall-clock time of the sample</td>
+</tr>
+<tr>
+<td><code>uuid</code></td>
+<td>GPU device UUID</td>
+</tr>
+<tr>
+<td><code>clocks_throttle_reasons.sw_thermal_slowdown</code></td>
+<td>Whether the GPU is throttling due to temperature</td>
+</tr>
+<tr>
+<td><code>utilization.gpu</code></td>
+<td>GPU utilisation (%) — see note below</td>
+</tr>
+<tr>
+<td><code>utilization.memory</code></td>
+<td>Memory bus utilisation (%) — see note below</td>
+</tr>
+<tr>
+<td><code>memory.used</code> / <code>memory.total</code></td>
+<td>Device memory in MiB</td>
+</tr>
+<tr>
+<td><code>temperature.gpu</code></td>
+<td>GPU die temperature in °C</td>
+</tr>
+<tr>
+<td><code>power.draw</code></td>
+<td>Instantaneous power draw in W</td>
+</tr>
+<tr>
+<td><code>clocks.current.sm</code></td>
+<td>SM clock frequency in MHz</td>
+</tr>
+</tbody>
+</table>
+</details>
+<div class="admonition terminal-2">
+<p class="admonition-title">Sample Slurm script</p>
+<ul>
+<li>Replace <code>#SBATCH --account       gpu_project</code> with your BMRC GPU Slurm account </li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="cp">#!/bin/bash </span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">account</span><span class="w">       </span><span class="n">gpu_project</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">job</span><span class="o">-</span><span class="n">name</span><span class="w">      </span><span class="n">gpu</span><span class="o">-</span><span class="n">burn</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">cpus</span><span class="o">-</span><span class="n">per</span><span class="o">-</span><span class="n">task</span><span class="w"> </span><span class="mi">2</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">partition</span><span class="w">     </span><span class="n">gpu_inter</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">gpus</span><span class="o">-</span><span class="n">per</span><span class="o">-</span><span class="n">node</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">mem</span><span class="w">           </span><span class="mi">4</span><span class="n">G</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">time</span><span class="w">          </span><span class="mi">00</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">00</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">#</span><span class="n">SBATCH</span><span class="w"> </span><span class="o">--</span><span class="n">output</span><span class="w">        </span><span class="n">slog</span><span class="o">/%</span><span class="n">j</span><span class="p">.</span><span class="n">out</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">module</span><span class="w"> </span><span class="n">purge</span><span class="w"> </span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">module</span><span class="w"> </span><span class="n">load</span><span class="w"> </span><span class="n">CUDA</span><span class="o">/</span><span class="mf">12.6.0</span><span class="w"> </span><span class="n">GCC</span><span class="o">/</span><span class="mf">12.3.0</span><span class="w"> </span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">#</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="n">collecting</span><span class="w"> </span><span class="n">GPU</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">background</span><span class="w"> </span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">nvidia</span><span class="o">-</span><span class="n">smi</span><span class="w"> </span><span class="o">--</span><span class="n">query</span><span class="o">-</span><span class="n">gpu</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span><span class="n">uuid</span><span class="p">,</span><span class="n">clocks_throttle_reasons</span><span class="p">.</span><span class="n">sw_thermal_slowdown</span><span class="p">,</span><span class="n">utilization</span><span class="p">.</span><span class="n">gpu</span><span class="p">,</span><span class="n">utilization</span><span class="p">.</span><span class="n">memory</span><span class="p">,</span><span class="n">memory</span><span class="p">.</span><span class="n">used</span><span class="p">,</span><span class="n">memory</span><span class="p">.</span><span class="n">total</span><span class="p">,</span><span class="n">temperature</span><span class="p">.</span><span class="n">gpu</span><span class="p">,</span><span class="n">power</span><span class="p">.</span><span class="n">draw</span><span class="p">,</span><span class="n">clocks</span><span class="p">.</span><span class="n">current</span><span class="p">.</span><span class="n">sm</span><span class="w"> </span><span class="err">\</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w"> </span><span class="o">--</span><span class="n">format</span><span class="o">=</span><span class="n">csv</span><span class="p">,</span><span class="n">nounits</span><span class="w"> </span><span class="err">\</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w"> </span><span class="o">-</span><span class="n">l</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">-</span><span class="n">f</span><span class="w"> </span><span class="n">gpu</span><span class="o">-</span><span class="n">stats</span><span class="o">-</span><span class="cp">$</span><span class="p">{</span><span class="n">SLURM_JOB_ID</span><span class="p">}.</span><span class="n">csv</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="p">.</span><span class="o">/</span><span class="n">gpu_burn</span><span class="w"> </span><span class="o">-</span><span class="n">tc</span><span class="w"> </span><span class="o">-</span><span class="n">m</span><span class="w"> </span><span class="mi">80</span><span class="o">%</span><span class="w"> </span><span class="mi">600</span>
+</code></pre></div>
+</div>
+<p><br></p>
+<h2 id="visualising-the-gpu-stats-csv">Visualising the GPU stats CSV<a class="headerlink" href="#visualising-the-gpu-stats-csv" title="Permanent link">¶</a></h2>
+<p>Once your job completes, the <code>gpu-stats-${SLURM_JOB_ID}.csv</code> CSV can be passed to the plotting script to generate an interactive HTML report: </p>
+<ul>
+<li>The visualisation script can be <a href="https://raw.githubusercontent.com/kir-rescomp/training-gpu-profiling/refs/heads/main/scripts/plot_gpu_stats.py">found here</a> </li>
+<li>Edit the filename on line 12 with your filename .i.e. <code>fn = "gpu-stats-15140945.csv"</code> </li>
+</ul>
+<p>This produces a self-contained HTML file with time-series plots for utilisation, memory usage, temperature, power draw, and SM clock frequency across the full job duration. An example output is embedded below.</p>
+<iframe height="600" src="../images/gpu-stats-15140945.html" width="100%"></iframe>
+<h3 id="what-utilisation-actually-means">What "utilisation" actually means<a class="headerlink" href="#what-utilisation-actually-means" title="Permanent link">¶</a></h3>
+<p>Take care when interpreting the <code>utilization.gpu</code> and <code>utilization.memory</code> columns. Per the <code>nvidia-smi</code> documentation, these are time-based metrics, not capacity-based:</p>
+<ul>
+<li><strong>GPU utilisation</strong> — the percentage of the sample period during which at least one kernel was executing on the GPU.</li>
+<li><code>memory.using[MiB]</code> - VRAM capacity used — how many bytes are allocated</li>
+<li><code>utilization.memory [%]</code> - Memory bandwidth utilisation — the fraction of time over the sampling window that the memory interface was actively transferring data</li>
+</ul>
+<p>This means a single small kernel that runs continuously but uses only a tiny fraction of the GPU's compute capacity will still report 100% GPU utilisation. High utilisation is therefore a necessary but not sufficient indicator of efficient GPU use. If you see high utilisation alongside low throughput, the likely cause is a kernel that is poorly optimised for the hardware — a profiler such as Nsight Systems will give you the next level of detail.</p>
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer">
+        
+          
+          <a href="../2.srun_overlap/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Inspecting a live GPU job">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Inspecting a live GPU job
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../4.nsight-systems/" class="md-footer__link md-footer__link--next" aria-label="Next: Advanced - profiling GPU code with Nsight Systems">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Advanced - profiling GPU code with Nsight Systems
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      KIR Training Catalogue is licensed under a <a rel="noopener" target="_blank" href="https://www.gnu.org/licenses/gpl-3.0.en.html">GNU General Public License v3.0</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>
